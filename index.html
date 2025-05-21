@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 Relay Control Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      margin-top: 30px;
+    }
+    .relay-card {
+      display: inline-block;
+      background-color: white;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 220px;
+    }
+    .relay-card h2 {
+      margin-bottom: 10px;
+    }
+    .relay-card p {
+      margin-bottom: 10px;
+    }
+    .relay-card button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      background-color: blue;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .relay-card button:hover {
+      opacity: 0.8;
+    }
+    #allOffBtn {
+      background-color: #d32f2f;
+      color: white;
+      padding: 12px 25px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>ESP32 Relay Control Dashboard</h1>
+
+  <div class="relay-card">
+    <h2>Relay 1</h2>
+    <p>Status: <span id="status1">Loading...</span></p>
+    <button id="btn1">Toggle</button>
+  </div>
+
+  <div class="relay-card">
+    <h2>Relay 2</h2>
+    <p>Status: <span id="status2">Loading...</span></p>
+    <button id="btn2">Toggle</button>
+  </div>
+
+  <div class="relay-card">
+    <h2>Relay 3</h2>
+    <p>Status: <span id="status3">Loading...</span></p>
+    <button id="btn3">Toggle</button>
+  </div>
+
+  <div class="relay-card">
+    <h2>Relay 4</h2>
+    <p>Status: <span id="status4">Loading...</span></p>
+    <button id="btn4">Toggle</button>
+  </div>
+
+  <br>
+  <button id="allOffBtn">All OFF</button>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyC5wC7wYUPSLr20PRq0Z1ZUrphOTM5BAw0",
+      authDomain: "test-esp32-relay01.firebaseapp.com",
+      databaseURL: "https://test-esp32-relay01-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "test-esp32-relay01",
+      storageBucket: "test-esp32-relay01.firebasestorage.app",
+      messagingSenderId: "76720329423",
+      appId: "1:76720329423:web:bf5767f7652f5cd6861dba"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    // Login using Firebase email & password auth
+    firebase.auth().signInWithEmailAndPassword("subhajit444888@gmail.com", "90009000")
+      .then((userCredential) => {
+        console.log("Signed in as", userCredential.user.email);
+        startRelayControl(); // Only run dashboard logic after login
+      })
+      .catch((error) => {
+        console.error("Login failed:", error.message);
+        alert("Login failed! Check email or password.");
+      });
+
+    function startRelayControl() {
+      const db = firebase.database();
+
+      const relays = [
+        { id: 1, path: "relay1" },
+        { id: 2, path: "relay2" },
+        { id: 3, path: "relay3" },
+        { id: 4, path: "relay4" },
+      ];
+
+      relays.forEach(relay => {
+        const statusText = document.getElementById(`status${relay.id}`);
+        const toggleButton = document.getElementById(`btn${relay.id}`);
+        const relayRef = db.ref("/" + relay.path);
+
+        relayRef.on("value", (snapshot) => {
+          const state = snapshot.val();
+          statusText.innerText = state ? "ON" : "OFF";
+          toggleButton.style.backgroundColor = state ? "green" : "blue";
+        });
+
+        toggleButton.onclick = () => {
+          relayRef.get().then((snap) => {
+            relayRef.set(!snap.val());
+          });
+        };
+      });
+
+      document.getElementById("allOffBtn").onclick = () => {
+        relays.forEach(relay => {
+          db.ref("/" + relay.path).set(false);
+        });
+      };
+    }
+  </script>
+</body>
+</html>
