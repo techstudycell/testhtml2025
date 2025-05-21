@@ -1,34 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ESP32 Relay Control Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
     }
     h1 {
       margin-top: 30px;
     }
+
+    /* Login form styling */
+    #loginForm {
+      max-width: 320px;
+      margin: 100px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    #loginForm input[type="email"],
+    #loginForm input[type="password"] {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #loginForm button {
+      width: 95%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background-color: blue;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #loginForm button:hover {
+      opacity: 0.8;
+    }
+    #loginError {
+      color: red;
+      margin-top: 10px;
+      height: 20px;
+    }
+
+    /* Dashboard styling */
+    #dashboard {
+      display: none;
+      padding-bottom: 50px;
+    }
+
+    .relay-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 10px;
+    }
     .relay-card {
-      display: inline-block;
       background-color: white;
       padding: 20px;
-      margin: 20px;
       border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       width: 220px;
+      flex: 1 1 180px;
+      max-width: 260px;
     }
     .relay-card h2 {
       margin-bottom: 10px;
     }
     .relay-card p {
       margin-bottom: 10px;
+      font-weight: bold;
     }
     .relay-card button {
       padding: 10px 20px;
@@ -38,10 +91,12 @@
       background-color: blue;
       cursor: pointer;
       font-size: 16px;
+      width: 100%;
     }
     .relay-card button:hover {
       opacity: 0.8;
     }
+
     #allOffBtn {
       background-color: #d32f2f;
       color: white;
@@ -50,39 +105,71 @@
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      margin-top: 20px;
+      margin: 20px auto;
+      display: block;
+      max-width: 300px;
+      width: 90%;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 24px;
+        margin-top: 20px;
+      }
+      .relay-card {
+        width: 90%;
+        max-width: none;
+      }
+      #allOffBtn {
+        width: 90%;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>ESP32 Relay Control Dashboard</h1>
 
-  <div class="relay-card">
-    <h2>Relay 1</h2>
-    <p>Status: <span id="status1">Loading...</span></p>
-    <button id="btn1">Toggle</button>
+  <!-- Login Form -->
+  <div id="loginForm">
+    <h2>Login to Dashboard</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button id="loginBtn">Login</button>
+    <div id="loginError"></div>
   </div>
 
-  <div class="relay-card">
-    <h2>Relay 2</h2>
-    <p>Status: <span id="status2">Loading...</span></p>
-    <button id="btn2">Toggle</button>
-  </div>
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <h1>ESP32 Relay Control Dashboard</h1>
 
-  <div class="relay-card">
-    <h2>Relay 3</h2>
-    <p>Status: <span id="status3">Loading...</span></p>
-    <button id="btn3">Toggle</button>
-  </div>
+    <div class="relay-container">
+      <div class="relay-card">
+        <h2>Relay 1</h2>
+        <p>Status: <span id="status1">Loading...</span></p>
+        <button id="btn1">Toggle</button>
+      </div>
 
-  <div class="relay-card">
-    <h2>Relay 4</h2>
-    <p>Status: <span id="status4">Loading...</span></p>
-    <button id="btn4">Toggle</button>
-  </div>
+      <div class="relay-card">
+        <h2>Relay 2</h2>
+        <p>Status: <span id="status2">Loading...</span></p>
+        <button id="btn2">Toggle</button>
+      </div>
 
-  <br>
-  <button id="allOffBtn">All OFF</button>
+      <div class="relay-card">
+        <h2>Relay 3</h2>
+        <p>Status: <span id="status3">Loading...</span></p>
+        <button id="btn3">Toggle</button>
+      </div>
+
+      <div class="relay-card">
+        <h2>Relay 4</h2>
+        <p>Status: <span id="status4">Loading...</span></p>
+        <button id="btn4">Toggle</button>
+      </div>
+    </div>
+
+    <button id="allOffBtn">All OFF</button>
+  </div>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -90,29 +177,53 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
   <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyC5wC7wYUPSLr20PRq0Z1ZUrphOTM5BAw0",
-      authDomain: "test-esp32-relay01.firebaseapp.com",
-      databaseURL: "https://test-esp32-relay01-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "test-esp32-relay01",
-      storageBucket: "test-esp32-relay01.firebasestorage.app",
-      messagingSenderId: "76720329423",
-      appId: "1:76720329423:web:bf5767f7652f5cd6861dba"
-    };
+    const predefinedEmail = "subhajit444888@gmail.com";
+    const predefinedPassword = "90009000";
 
-    firebase.initializeApp(firebaseConfig);
+    const loginForm = document.getElementById("loginForm");
+    const dashboard = document.getElementById("dashboard");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginError = document.getElementById("loginError");
 
-    // Login using Firebase email & password auth
-    firebase.auth().signInWithEmailAndPassword("subhajit444888@gmail.com", "90009000")
-      .then((userCredential) => {
-        console.log("Signed in as", userCredential.user.email);
-        startRelayControl(); // Only run dashboard logic after login
-      })
-      .catch((error) => {
-        console.error("Login failed:", error.message);
-        alert("Login failed! Check email or password.");
-      });
+    loginBtn.addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (email === predefinedEmail && password === predefinedPassword) {
+        loginError.innerText = "";
+        loginForm.style.display = "none";
+        dashboard.style.display = "block";
+        firebaseLoginAndStart();
+      } else {
+        loginError.innerText = "Invalid email or password.";
+      }
+    });
+
+    function firebaseLoginAndStart() {
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyC5wC7wYUPSLr20PRq0Z1ZUrphOTM5BAw0",
+        authDomain: "test-esp32-relay01.firebaseapp.com",
+        databaseURL: "https://test-esp32-relay01-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "test-esp32-relay01",
+        storageBucket: "test-esp32-relay01.firebasestorage.app",
+        messagingSenderId: "76720329423",
+        appId: "1:76720329423:web:bf5767f7652f5cd6861dba"
+      };
+
+      firebase.initializeApp(firebaseConfig);
+
+      // Firebase sign in with the same credentials (or you can skip this if you want)
+      firebase.auth().signInWithEmailAndPassword(predefinedEmail, predefinedPassword)
+        .then((userCredential) => {
+          console.log("Signed in as", userCredential.user.email);
+          startRelayControl(); // start relay dashboard logic
+        })
+        .catch((error) => {
+          console.error("Firebase login failed:", error.message);
+          alert("Firebase login failed! Check email or password.");
+        });
+    }
 
     function startRelayControl() {
       const db = firebase.database();
